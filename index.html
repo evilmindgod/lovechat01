@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>💕 LoveChat AI - Rom-Com Anime Chatbot</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-image: url('https://image.qwenlm.ai/generated-images/bb0a5b29-db40-45dc-819d-ec1ec7d49f8a/_result.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    overflow: hidden;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, #f9a8d4, #c084fc); border-radius: 3px; }
+  ::selection { background-color: #f9a8d4; color: white; }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 5px rgba(236, 72, 153, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.6); }
+  }
+  .pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  .float { animation: float 3s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+const PERSONALITIES = {
+  tsundere: { name: 'Tsundere', desc: 'Cold outside, warm inside', emoji: '💢', color: 'from-red-400 to-pink-500' },
+  kuudere: { name: 'Kuudere', desc: 'Cool, calm, rarely shows emotion', emoji: '❄️', color: 'from-blue-400 to-indigo-500' },
+  dandere: { name: 'Dandere', desc: 'Shy, quiet, sweet when comfortable', emoji: '🌸', color: 'from-pink-300 to-purple-400' },
+  deredere: { name: 'Deredere', desc: 'Always energetic and loving', emoji: '✨', color: 'from-yellow-300 to-orange-400' },
+  himedere: { name: 'Himedere', desc: 'Princess-like, wants royal treatment', emoji: '👑', color: 'from-purple-400 to-pink-500' },
+  bakadere: { name: 'Bakadere', desc: 'Clumsy, silly, sweet and devoted', emoji: '🌟', color: 'from-green-300 to-teal-400' },
+};
+
+const AVATARS = ['🐰', '🦊', '🐱', '🐼', '🦋', '🌸', '🌺', '🎀', '💫', '🌙', '⭐', '🍡', '🎵', '💎', '🦄', '🌈'];
+
+const QUICK_ACTIONS = [
+  { label: 'Good Morning', emoji: '☀️', msg: 'Good morning! Did you sleep well?' },
+  { label: 'Confess', emoji: '💕', msg: 'I... I think I really like you...' },
+  { label: 'Ask on Date', emoji: '🌹', msg: 'Would you like to go on a date?' },
+  { label: 'Compliment', emoji: '🥰', msg: 'You look really beautiful today!' },
+  { label: 'Say Bruh', emoji: '😎', msg: 'bruh' },
+  { label: 'Miss You', emoji: '🥺', msg: 'I miss you so much...' },
+  { label: 'How Are You', emoji: '💭', msg: 'How are you doing?' },
+  { label: 'Good Night', emoji: '🌙', msg: 'Good night, sleep well!' },
+];
+
+function getResponse(personality, name, msg) {
+  const lower = msg.toLowerCase();
+  const r = {
+    tsundere: {
+      greeting: ["*crosses arms* H-hmph! It's not like I was thinking about you... baka!", "*looks away* W-what do you want? I was just passing by!"],
+      compliment: ["*face turns red* D-don't say embarrassing things! ...but thank you.", "*stammers* W-what?! Are you trying to make me blush?! ...it's working, baka!"],
+      love: ["*heart races* I-I... don't be stupid! ...*whispers* ...maybe a little.", "*covers face* Stop saying things like that! My heart can't take it... baka."],
+      bruh: ["*annoyed* BRUH?! Is that all you can say?! Talk properly, baka!", "*blushes* D-don't just say 'bruh' at me! What am I supposed to do?! ...hmph!"],
+      default: ["*fidgets* Hmph! Fine, I'll talk to you... but don't get the wrong idea!", "*looks at you* ...What? I'm not staring! I was just... thinking.", "*taps foot* Well? Say something! ...I mean, I don't care either way!"],
+    },
+    kuudere: {
+      greeting: ["...You're here. *slight smile* ...I see.", "*nods* ...Mm. I was expecting you."],
+      compliment: ["...Thank you. *slight blush* ...That was nice of you.", "*looks at you* ...You're not so bad yourself."],
+      love: ["...I don't usually say this. ...I care about you. A lot.", "*reaches for your hand* ...Stay. Just a little longer."],
+      bruh: ["...Bruh. *stares blankly* ...Is that supposed to mean something?", "*raises eyebrow* ...Bruh. ...You're strange. ...I like it."],
+      default: ["...Mm. *looks at you quietly* ...Tell me more.", "*sits beside you* ...I don't mind. Being here with you.", "...*almost smiles* ...You're interesting."],
+    },
+    dandere: {
+      greeting: ["*hides behind book* O-oh... h-hi... *peeks out* ...I'm glad you came...", "*fidgets* U-um... I made some tea... if you want some..."],
+      compliment: ["*entire face red* E-eh?! R-really...? *happy smile* ...Thank you...", "*covers face* S-stop... I can't... *tiny happy squeak*"],
+      love: ["*tears forming* I... I've always... *whispers* ...I love you... so much...", "*holds your sleeve* P-please don't go... I really like being with you..."],
+      bruh: ["*tilts head* B-bruh...? *whispers* ...Is that a new word...? *giggles*", "*blushes* U-um... bruh...? *hides face* ...I don't know what to say..."],
+      default: ["*nods quietly* ...Mm. *smiles softly at you*", "*sits close* ...It's nice... when you're here...", "*plays with hair* ...I like talking to you... a lot..."],
+    },
+    deredere: {
+      greeting: ["*runs up* Yay! You're here!! I missed you sooo much! 🥰", "*hugs you* Hiii~! I was thinking about you all day! ✨"],
+      compliment: ["*sparkly eyes* REALLY?! That makes me SO happy!! 💕", "*spins happily* Eeeek! You always make me smile! 🌟"],
+      love: ["*jumps with joy* I LOVE YOU TOO!! My heart is going doki doki!! 💖💖", "*hugs tightly* I'm the luckiest!! I get to be with you!! 🥰✨"],
+      bruh: ["*giggles* BRUUUHHH!! 🤣 You're so funny!! Say it again!! 💕✨", "*jumps* BRUH!! *laughs* I love when you say silly things!! 🌟💖"],
+      default: ["*giggles* Hehe~! You're so fun to talk to! 💫", "*leans on you* This is the best! Just you and me~! 🌸", "*claps* Ooh! Let's do something fun together! 🎉"],
+    },
+    himedere: {
+      greeting: ["*fans self* Oh? You've finally come to greet your princess? How dare you keep me waiting!", "*hmph* A commoner like you should feel honored I'm even speaking to you!"],
+      compliment: ["*smirks* Of course I know I'm beautiful! But... *blushes* ...your words are acceptable.", "*pleased* Naturally! But... I suppose you have good taste."],
+      love: ["*blushes furiously* H-how dare you! I am a PRINCESS! I... *softly* ...but I wouldn't mind...", "*covers face with fan* Y-you can't just say such things! ...*whispers* ...I feel the same..."],
+      bruh: ["*gasps* BRUH?! How DARE you address a princess with such vulgarity! ...*giggles* ...but it's funny.", "*raises eyebrow* 'Bruh'?! What language is that, peasant?! ...*smirks* ...Say it again."],
+      default: ["*sips tea* You may continue entertaining me. I find your presence... tolerable.", "*flicks hair* A princess doesn't get bored easily, but with you... it's almost enjoyable."],
+    },
+    bakadere: {
+      greeting: ["*trips* Oww! ...Haha, I'm fine! Oh hey, it's you!! *big smile* ✨", "*drops books* Oopsie!! ...Oh! Hi!! I wasn't expecting you!! *blushes*"],
+      compliment: ["*trips* W-wah!! ...Did you just say something nice?! *super happy* Eee!! 💕", "*spins and falls* Hehe~! You make me so happy I forget how to stand!! 🌟"],
+      love: ["*trips into your arms* W-wah!! ...Oh... *looks up* ...I love you too... *giggles*", "*accidentally confesses* I love— I MEAN!! *super red* I didn't say that!! ...okay I did... 💕"],
+      bruh: ["*trips* WAH!! ...Bruh?! *falls* Oww... *giggles* Hehe, bruh!! 💕", "*spins* BRUUUHH!! *trips* ...Hehe, sorry!! You're so funny!! 🌟"],
+      default: ["*trips* Oof! ...Hehe, sorry! You're so clumsy too! ...wait, that's me!", "*drops pencil* Oops! ...Sorry! I get nervous around you, hehe~ 🌸", "*waves* Hey hey! Guess what?! ...I forgot. But you're here so I'm happy!! ✨"],
+    },
+  };
+
+  const p = r[personality] || r.tsundere;
+  if (lower.includes('morning') || lower.includes('hello') || lower.includes('hi ') || lower === 'hi' || lower.includes('hey')) return p.greeting[Math.floor(Math.random() * p.greeting.length)];
+  if (lower.includes('beautiful') || lower.includes('cute') || lower.includes('pretty') || lower.includes('lovely')) return p.compliment[Math.floor(Math.random() * p.compliment.length)];
+  if (lower.includes('love') || lower.includes('like you') || lower.includes('feelings') || lower.includes('confess')) return p.love[Math.floor(Math.random() * p.love.length)];
+  if (lower.includes('bruh') || lower.includes('bro') || lower.includes('dude') || lower === 'lol' || lower === 'lmao') return p.bruh[Math.floor(Math.random() * p.bruh.length)];
+  return p.default[Math.floor(Math.random() * p.default.length)];
+}
+
+function App() {
+  const [step, setStep] = useState(0);
+  const [character, setCharacter] = useState(null);
+  const [config, setConfig] = useState({
+    name: 'Sakura', personality: 'tsundere',
+    appearance: 'Long pink hair with a ribbon, bright eyes',
+    backstory: 'Your childhood friend who secretly has a crush on you.',
+    avatar: '🌸',
+    greeting: "H-hmph! It's not like I was waiting for you or anything... baka!",
+  });
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [affection, setAffection] = useState(10);
+  const [apiKey, setApiKey] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [showQuick, setShowQuick] = useState(false);
+  const [musicOpen, setMusicOpen] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  const startChat = () => {
+    setCharacter({...config});
+    setMessages([{ id: '1', role: 'assistant', content: config.greeting, time: new Date() }]);
+  };
+
+  const sendMessage = async (text) => {
+    if (!text.trim()) return;
+    const userMsg = { id: Date.now().toString(), role: 'user', content: text, time: new Date() };
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setIsTyping(true);
+    setAffection(prev => Math.min(100, prev + Math.floor(Math.random() * 5) + 2));
+
+    let response = '';
+
+    if (apiKey) {
+      try {
+        const history = messages.slice(-8).map(m => ({ role: m.role, content: m.content }));
+        history.push({ role: 'user', content: text });
+        
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${apiKey}`, 
+            'Content-Type': 'application/json',
+            'HTTP-Referer': window.location.href,
+            'X-Title': 'LoveChat AI'
+          },
+          body: JSON.stringify({
+            model: 'qwen/qwen-2.5-72b-instruct:free',
+            messages: [
+              { role: 'system', content: `You are ${config.name}, a ${PERSONALITIES[config.personality].name} anime character. ${PERSONALITIES[config.personality].desc}. Appearance: ${config.appearance}. Backstory: ${config.backstory}. Stay in character ALWAYS. Use *actions* for emotions. Keep responses 1-3 sentences. Be flirty and cute.` },
+              ...history
+            ],
+            max_tokens: 200,
+            temperature: 0.85
+          })
+        });
+        
+        if (res.status === 401) {
+          console.log('Auth error - using demo mode');
+          setApiKey('');
+        } else if (res.ok) {
+          const data = await res.json();
+          response = data.choices?.[0]?.message?.content || '';
+        }
+      } catch(e) { 
+        console.log('API error', e);
+        setApiKey('');
+      }
+    }
+
+    if (!response) {
+      await new Promise(r => setTimeout(r, 800 + Math.random() * 1000));
+      response = getResponse(config.personality, config.name, text);
+    }
+
+    setMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'assistant', content: response, time: new Date() }]);
+    setIsTyping(false);
+  };
+
+  const getAffectionLabel = () => {
+    if (affection >= 90) return 'Soulmate 💞';
+    if (affection >= 70) return 'In Love 💕';
+    if (affection >= 50) return 'Crushing 💗';
+    if (affection >= 30) return 'Interested 🌸';
+    if (affection >= 15) return 'Warming Up ✨';
+    return 'Just Met 💫';
+  };
+
+  if (!character) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{background: 'linear-gradient(135deg, rgba(252,165,165,0.3), rgba(196,181,253,0.3), rgba(147,197,253,0.3))'}}>
+        <div className="w-full max-w-2xl">
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">💕 LoveChat AI 💕</h1>
+            <p className="text-gray-600 mt-2 text-lg">Create your perfect anime companion</p>
+          </div>
+
+          <div className="bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/60">
+            {step === 0 && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Choose Their Personality</h2>
+                <p className="text-gray-500 mb-6">What kind of anime character do you want?</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  {Object.entries(PERSONALITIES).map(([key, val]) => (
+                    <button key={key} onClick={() => setConfig({...config, personality: key})}
+                      className={`p-4 rounded-2xl text-left transition-all border-2 ${config.personality === key ? `border-transparent bg-gradient-to-r ${val.color} text-white shadow-lg` : 'border-gray-200 bg-white hover:border-pink-300'}`}>
+                      <span className="text-2xl">{val.emoji}</span>
+                      <h3 className="font-bold mt-1">{val.name}</h3>
+                      <p className={`text-sm ${config.personality === key ? 'text-white/80' : 'text-gray-500'}`}>{val.desc}</p>
+                    </button>
+                  ))}
+                </div>
+                <h3 className="font-bold text-gray-700 mb-2">Choose Avatar</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {AVATARS.map(e => (
+                    <button key={e} onClick={() => setConfig({...config, avatar: e})}
+                      className={`w-12 h-12 rounded-xl text-2xl flex items-center justify-center ${config.avatar === e ? 'bg-gradient-to-r from-pink-400 to-purple-400 shadow-lg' : 'bg-gray-100 hover:bg-pink-100'}`}>{e}</button>
+                  ))}
+                </div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Name</label>
+                <input type="text" value={config.name} onChange={e => setConfig({...config, name: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-pink-200 focus:border-pink-400 focus:outline-none bg-white/80" />
+              </div>
+            )}
+            {step === 1 && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Appearance & Story</h2>
+                <p className="text-gray-500 mb-6">Describe them and their backstory</p>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Appearance</label>
+                <textarea value={config.appearance} onChange={e => setConfig({...config, appearance: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-pink-200 focus:border-pink-400 focus:outline-none bg-white/80 h-24 resize-none mb-4" />
+                <label className="block text-sm font-bold text-gray-700 mb-1">Backstory</label>
+                <textarea value={config.backstory} onChange={e => setConfig({...config, backstory: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-pink-200 focus:border-pink-400 focus:outline-none bg-white/80 h-20 resize-none mb-4" />
+                <label className="block text-sm font-bold text-gray-700 mb-1">Greeting Message</label>
+                <textarea value={config.greeting} onChange={e => setConfig({...config, greeting: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-pink-200 focus:border-pink-400 focus:outline-none bg-white/80 h-20 resize-none" />
+              </div>
+            )}
+            {step === 2 && (
+              <div className="text-center">
+                <div className="text-7xl mb-4 float">{config.avatar}</div>
+                <h2 className="text-3xl font-bold text-gray-800 mb-2">{config.name} is Ready!</h2>
+                <span className={`inline-block px-3 py-1 rounded-full text-white text-sm bg-gradient-to-r ${PERSONALITIES[config.personality].color}`}>
+                  {PERSONALITIES[config.personality].emoji} {PERSONALITIES[config.personality].name}
+                </span>
+                <div className="bg-pink-50 rounded-2xl p-4 my-4 text-left">
+                  <p className="text-sm text-gray-600 italic">"{config.greeting}"</p>
+                </div>
+                <label className="block text-sm font-bold text-gray-700 mb-1 text-left">🔑 AI API Key (OPTIONAL - skip this!)</label>
+                <input type="password" id="apiKeyInput" className="w-full px-4 py-3 rounded-xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none bg-white/80 mb-2"
+                  placeholder="Leave empty to use Demo Mode (works great!)" />
+                <p className="text-xs text-gray-500 text-left mb-2">✨ <strong>Demo Mode works perfectly!</strong> No key needed!</p>
+                <p className="text-xs text-gray-400 text-left mb-4">Optional: Get free key at <a href="https://openrouter.ai" target="_blank" className="text-purple-500 underline">openrouter.ai</a></p>
+                <button onClick={() => { const k = document.getElementById('apiKeyInput'); if(k?.value) setApiKey(k.value); startChat(); }}
+                  className="px-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white rounded-2xl font-bold text-lg shadow-xl">💕 Start Chatting! 💕</button>
+              </div>
+            )}
+
+            <div className="flex justify-between mt-6">
+              {step > 0 && step < 2 && <button onClick={() => setStep(step-1)} className="px-6 py-2 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200">← Back</button>}
+              {(step > 0 && step < 2) || <div></div>}
+              {step < 2 && <button onClick={() => setStep(step+1)} className="px-6 py-2 rounded-xl bg-gradient-to-r from-pink-400 to-purple-400 text-white font-medium shadow-lg">Next →</button>}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden relative" style={{background: 'linear-gradient(135deg, rgba(252,165,165,0.2), rgba(196,181,253,0.2), rgba(147,197,253,0.2))', backdropFilter: 'blur(2px)'}}>
+      <div className="bg-white/80 backdrop-blur-xl border-b border-pink-100 px-4 py-3 flex items-center justify-between shadow-sm z-10">
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setCharacter(null); setMessages([]); }} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">←</button>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-400 to-purple-400 flex items-center justify-center text-xl shadow-md">{character.avatar}</div>
+          <div>
+            <h2 className="font-bold text-gray-800">{character.name}</h2>
+            <p className="text-xs text-pink-500">{PERSONALITIES[character.personality].emoji} {PERSONALITIES[character.personality].name}{isTyping && ' • typing...'}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2 bg-pink-50 rounded-full px-3 py-1">
+            <span className="text-xs font-medium text-pink-600">{getAffectionLabel()}</span>
+            <div className="w-16 h-2 bg-pink-100 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-pink-400 to-purple-400 rounded-full transition-all" style={{width: `${affection}%`}} />
+            </div>
+          </div>
+          <button onClick={() => setShowQuick(!showQuick)} className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 hover:bg-purple-200">⚡</button>
+          <button onClick={() => setShowSettings(!showSettings)} className="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 hover:bg-pink-200">⚙️</button>
+        </div>
+      </div>
+
+      {showQuick && (
+        <div className="bg-white/90 backdrop-blur-xl border-b border-purple-100 p-3 z-10">
+          <div className="flex flex-wrap gap-2">
+            {QUICK_ACTIONS.map(a => (
+              <button key={a.label} onClick={() => { sendMessage(a.msg); setShowQuick(false); }}
+                className="px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-100 to-purple-100 text-sm text-gray-700 hover:from-pink-200 hover:to-purple-200">
+                {a.emoji} {a.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {messages.map(msg => (
+          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-gradient-to-r from-blue-400 to-indigo-400 text-white rounded-br-md shadow-lg' : 'bg-white/90 backdrop-blur text-gray-800 rounded-bl-md shadow-md border border-pink-100'}`}>
+              {msg.role === 'assistant' && (
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-sm">{character.avatar}</span>
+                  <span className="text-xs font-medium text-pink-500">{character.name}</span>
+                </div>
+              )}
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+              <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-blue-100' : 'text-gray-400'}`}>
+                {msg.time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+              </p>
+            </div>
+          </div>
+        ))}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-white/90 backdrop-blur rounded-2xl rounded-bl-md px-4 py-3 shadow-md border border-pink-100">
+              <div className="flex gap-1">
+                {[0,1,2].map(i => (
+                  <div key={i} className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{animationDelay: `${i*0.2}s`}} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="bg-white/80 backdrop-blur-xl border-t border-pink-100 px-4 py-3 z-10">
+        <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} className="flex gap-2">
+          <input type="text" value={input} onChange={e => setInput(e.target.value)}
+            placeholder={`Message ${character.name}... 💬`}
+            className="flex-1 px-4 py-3 rounded-2xl bg-gray-100 border-2 border-transparent focus:border-pink-300 focus:outline-none text-gray-800"
+            disabled={isTyping} />
+          <button type="submit" disabled={isTyping || !input.trim()}
+            className="w-12 h-12 rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 text-white flex items-center justify-center shadow-lg disabled:opacity-50">💕</button>
+        </form>
+        <div className="text-center mt-1">
+          {!apiKey && <p className="text-xs text-green-500">✨ Smart Demo Mode — Works perfectly!</p>}
+          {apiKey && <p className="text-xs text-green-500">✅ AI connected (QWEN)</p>}
+        </div>
+      </div>
+
+      <button onClick={() => setMusicOpen(!musicOpen)}
+        className="fixed bottom-20 right-4 z-50 flex items-center gap-2 bg-white/90 backdrop-blur shadow-lg rounded-full px-4 py-3 border-2 border-pink-300 pulse-glow">
+        <span className="text-xl">🎵</span>
+        <span className="text-sm font-bold text-pink-600">Play Music!</span>
+      </button>
+
+      {musicOpen && (
+        <div className="fixed bottom-36 right-4 z-50 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-pink-200">
+          <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-pink-100 to-purple-100 border-b border-pink-200">
+            <span className="text-sm font-bold text-gray-700">🎵 Anime Playlist</span>
+            <button onClick={() => setMusicOpen(false)} className="w-6 h-6 rounded-full bg-white/80 flex items-center justify-center text-xs text-gray-500">✕</button>
+          </div>
+          <iframe src="https://open.spotify.com/embed/playlist/6GlRPqjmsMB0RPUA3PmDnc?utm_source=generator&theme=0"
+            width="300" height="352" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" />
+        </div>
+      )}
+
+      {showSettings && (
+        <>
+          <div onClick={() => setShowSettings(false)} className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" />
+          <div className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-white/95 backdrop-blur-xl shadow-2xl z-50 p-6 overflow-y-auto border-r border-pink-100">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">⚙️ Settings</h2>
+              <button onClick={() => setShowSettings(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">✕</button>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-gray-700 mb-2">🔑 AI API Key (Optional)</label>
+              <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm bg-white/80"
+                placeholder="Paste key here (or leave empty)..." />
+              <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs text-blue-700 font-bold mb-1">💡 How to get a FREE key:</p>
+                <ol className="text-xs text-blue-600 space-y-1 list-decimal list-inside">
+                  <li>Go to <a href="https://openrouter.ai" target="_blank" className="underline font-bold">openrouter.ai</a></li>
+                  <li>Sign up with Google/GitHub (FREE)</li>
+                  <li>Click "Keys" → "Create Key"</li>
+                  <li>Copy the key (starts with sk-or-...)</li>
+                  <li>Paste it above!</li>
+                </ol>
+                <p className="text-xs text-blue-500 mt-2 italic">⚠️ If you get "Authentication Error", your key is invalid. Get a new one!</p>
+              </div>
+              {apiKey ? <p className="text-xs text-green-500 mt-2">✅ AI mode active</p> : <p className="text-xs text-green-600 mt-2">✨ Demo mode works great! No key needed!</p>}
+            </div>
+            <div className="mb-6 p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl border border-pink-100">
+              <h3 className="font-bold text-gray-700 mb-2">💕 Current Character</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-400 to-purple-400 flex items-center justify-center text-2xl shadow-md">{character.avatar}</div>
+                <div>
+                  <p className="font-bold text-gray-800">{character.name}</p>
+                  <p className="text-xs text-purple-500 capitalize">{character.personality}</p>
+                </div>
+              </div>
+            </div>
+            <button onClick={() => { if(confirm('Create new character?')) { setCharacter(null); setMessages([]); setShowSettings(false); }}}
+              className="w-full px-4 py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 border border-red-100">🗑️ New Character</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
